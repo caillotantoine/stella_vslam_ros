@@ -132,6 +132,7 @@ int main(int argc, char* argv[]) {
     auto map_db_path_out = op.add<popl::Value<std::string>>("o", "map-db-out", "store a map database at this path after slam", "");
     auto disable_mapping = op.add<popl::Switch>("", "disable-mapping", "disable mapping");
     auto rectify = op.add<popl::Switch>("r", "rectify", "rectify stereo image");
+    auto camID = op.add<popl::Value<std::string>>("", "cam-id", "camera ID");
     try {
         op.parse(argc, argv);
     }
@@ -198,19 +199,24 @@ int main(int argc, char* argv[]) {
         slam->disable_mapping_module();
     }
 
+    if(camID->is_set()) 
+        slam->set_camera_id(std::stoi(camID->value()));
+    else
+        slam->set_camera_id(0);
+
     std::shared_ptr<stella_vslam_ros::system> slam_ros;
-    if (slam->get_camera()->setup_type_ == stella_vslam::camera::setup_type_t::Monocular) {
+    if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Monocular) {
         slam_ros = std::make_shared<stella_vslam_ros::mono>(slam, mask_img_path->value());
     }
-    else if (slam->get_camera()->setup_type_ == stella_vslam::camera::setup_type_t::Stereo) {
-        auto rectifier = rectify->value() ? std::make_shared<stella_vslam::util::stereo_rectifier>(cfg, slam->get_camera()) : nullptr;
+    else if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Stereo) {
+        auto rectifier = rectify->value() ? std::make_shared<stella_vslam::util::stereo_rectifier>(cfg, slam->get_camera(slam->get_camera_id())) : nullptr;
         slam_ros = std::make_shared<stella_vslam_ros::stereo>(slam, mask_img_path->value(), rectifier);
     }
-    else if (slam->get_camera()->setup_type_ == stella_vslam::camera::setup_type_t::RGBD) {
+    else if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::RGBD) {
         slam_ros = std::make_shared<stella_vslam_ros::rgbd>(slam, mask_img_path->value());
     }
     else {
-        throw std::runtime_error("Invalid setup type: " + slam->get_camera()->get_setup_type_string());
+        throw std::runtime_error("Invalid setup type: " + slam->get_camera(slam->get_camera_id())->get_setup_type_string());
     }
 
     // run tracking

@@ -209,8 +209,14 @@ void system::init_pose_callback(
 
 mono::mono(const std::shared_ptr<stella_vslam::system>& slam,
            const std::string& mask_img_path)
-    : system(slam, mask_img_path) {
-    sub_ = it_.subscribe("camera/image_raw", 1, &mono::callback, this);
+    : system(slam, mask_img_path) { 
+    std::string topic_str;
+    if(slam->get_cameras_size() > 1)
+        topic_str = "camera/" + std::to_string(slam->get_camera_id()) +"/image_raw";
+    else
+        topic_str = "camera/image_raw";
+    ROS_ERROR(topic_str.c_str());
+    sub_ = it_.subscribe(topic_str.c_str(), 1, &mono::callback, this);
 }
 void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
     if (camera_optical_frame_.empty()) {
@@ -237,6 +243,10 @@ void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
     if (publish_keyframes_) {
         publish_keyframes(msg->header.stamp);
     }
+}
+
+multi::multi(const std::shared_ptr<stella_vslam::system>& slam,
+         const std::string& mask_img_path) : system(slam, mask_img_path) {
 }
 
 stereo::stereo(const std::shared_ptr<stella_vslam::system>& slam,

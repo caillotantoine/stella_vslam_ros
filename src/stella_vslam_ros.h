@@ -23,6 +23,8 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseArray.h>
 
+#include <vector>
+
 namespace stella_vslam_ros {
 class system {
 public:
@@ -59,6 +61,22 @@ private:
     void init_pose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
 
     Eigen::AngleAxisd rot_ros_to_cv_map_frame_;
+};
+
+class multi : public system {
+    public:
+        multi(const std::shared_ptr<stella_vslam::system>& slam,
+         const std::string& mask_img_path);
+        
+        void callback(const std::vector<sensor_msgs::ImageConstPtr&> msgs);
+
+        using ApproximateTimeSyncPolicy = message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image>;
+        std::shared_ptr<ApproximateTimeSyncPolicy::Sync> approx_time_sync_;
+        using ExactTimeSyncPolicy = message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image>;
+        std::shared_ptr<ExactTimeSyncPolicy::Sync> exact_time_sync_;
+        bool use_exact_time_;
+
+        std::vector<image_transport::Subscriber> subs_;
 };
 
 class mono : public system {
