@@ -215,7 +215,7 @@ mono::mono(const std::shared_ptr<stella_vslam::system>& slam,
         topic_str = "camera/" + std::to_string(slam->get_camera_id()) +"/image_raw";
     else
         topic_str = "camera/image_raw";
-    ROS_ERROR(topic_str.c_str());
+    // ROS_ERROR(topic_str.c_str());
     sub_ = it_.subscribe(topic_str.c_str(), 1, &mono::callback, this);
 }
 void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
@@ -245,8 +245,81 @@ void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
     }
 }
 
-multi::multi(const std::shared_ptr<stella_vslam::system>& slam,
-         const std::string& mask_img_path) : system(slam, mask_img_path) {
+multimono::multimono(const std::shared_ptr<stella_vslam::system>& slam, const std::string& mask_img_path) 
+    : system(slam, mask_img_path) {
+    
+    std::string topic_str;
+    use_exact_time_ = false;
+    private_nh_.param("use_exact_time", use_exact_time_, use_exact_time_);
+
+    // image_transport::SubscriberFilter* tg;
+    // cam3_ = new image_transport::SubscriberFilter(it_, "camera/3/image_raw", 1);
+    // cam0_ = new image_transport::SubscriberFilter(it_, "camera/3/image_raw", 1);
+
+    switch (slam->get_cameras_size())
+    {
+        case 4:
+            // ROS_ERROR("cam3_");
+            cam3_ = new image_transport::SubscriberFilter(it_, "camera/3/image_raw", 1);
+        case 3:
+            // ROS_ERROR("cam2_");
+            cam2_ = new image_transport::SubscriberFilter(it_, "camera/2/image_raw", 1);
+        case 2:
+            // ROS_ERROR("cam1_");
+            cam1_ = new image_transport::SubscriberFilter(it_, "camera/1/image_raw", 1);
+        case 1:
+            // ROS_ERROR("cam0_");
+            cam0_ = new image_transport::SubscriberFilter(it_, "camera/0/image_raw", 1);
+            break;
+        
+        default:
+            ROS_ERROR("This number of camera is not supported.");
+            break;
+    }
+
+    // in the case of the two cameras
+    if(use_exact_time_) {
+        exact_time_sync_ = std::make_shared<ExactTimeSyncPolicy::Sync>(2, *cam0_, *cam1_);
+        exact_time_sync_->registerCallback(&multimono::callbackTwo, this);
+    } else {
+        approx_time_sync_ = std::make_shared<ApproximateTimeSyncPolicy::Sync>(10, *cam0_, *cam1_);
+        approx_time_sync_->registerCallback(&multimono::callbackTwo, this);
+    }
+}
+
+void multimono::callbackTwo(const sensor_msgs::ImageConstPtr& msg0, const sensor_msgs::ImageConstPtr& msg1) {
+    if (camera_optical_frame_.empty()) {
+        camera_optical_frame_ = msg0->header.frame_id;
+    }
+
+    std::vector<cv::Mat> imgs;
+
+    imgs.push_back(cv_bridge::toCvShare(msg0)->image);
+    imgs.push_back(cv_bridge::toCvShare(msg1)->image);
+
+
+    const auto tp_1 = std::chrono::steady_clock::now();
+    const auto timestamp = std::chrono::duration_cast<std::chrono::duration<double>>(tp_1 - tp_0_).count();
+
+    // input the current frame and estimate the camera pose
+    auto cam_pose_wc = slam_->feed_multimono_frame(imgs, timestamp, mask_);
+
+
+    const auto tp_2 = std::chrono::steady_clock::now();
+
+    const auto track_time = std::chrono::duration_cast<std::chrono::duration<double>>(tp_2 - tp_1).count();
+    track_times_.push_back(track_time);
+
+    if (cam_pose_wc) {
+        publish_pose(*cam_pose_wc, msg0->header.stamp);
+    }
+
+    if (publish_pointcloud_) {
+        publish_pointcloud(msg0->header.stamp);
+    }
+    if (publish_keyframes_) {
+        publish_keyframes(msg0->header.stamp);
+    }
 }
 
 stereo::stereo(const std::shared_ptr<stella_vslam::system>& slam,

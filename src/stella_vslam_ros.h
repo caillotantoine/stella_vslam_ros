@@ -63,12 +63,13 @@ private:
     Eigen::AngleAxisd rot_ros_to_cv_map_frame_;
 };
 
-class multi : public system {
+class multimono : public system {
     public:
-        multi(const std::shared_ptr<stella_vslam::system>& slam,
+        multimono(const std::shared_ptr<stella_vslam::system>& slam,
          const std::string& mask_img_path);
         
-        void callback(const std::vector<sensor_msgs::ImageConstPtr&> msgs);
+        void callbackTwo(const sensor_msgs::ImageConstPtr& msg0, 
+            const sensor_msgs::ImageConstPtr& msg1);
 
         using ApproximateTimeSyncPolicy = message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image>;
         std::shared_ptr<ApproximateTimeSyncPolicy::Sync> approx_time_sync_;
@@ -76,7 +77,10 @@ class multi : public system {
         std::shared_ptr<ExactTimeSyncPolicy::Sync> exact_time_sync_;
         bool use_exact_time_;
 
-        std::vector<image_transport::Subscriber> subs_;
+        image_transport::SubscriberFilter* cam0_;
+        image_transport::SubscriberFilter* cam1_;
+        image_transport::SubscriberFilter* cam2_;
+        image_transport::SubscriberFilter* cam3_;
 };
 
 class mono : public system {

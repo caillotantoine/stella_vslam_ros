@@ -206,7 +206,7 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<stella_vslam_ros::system> slam_ros;
     if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Monocular) {
-        slam_ros = std::make_shared<stella_vslam_ros::mono>(slam, mask_img_path->value());
+        slam_ros = std::make_shared<stella_vslam_ros::multimono>(slam, mask_img_path->value());
     }
     else if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Stereo) {
         auto rectifier = rectify->value() ? std::make_shared<stella_vslam::util::stereo_rectifier>(cfg, slam->get_camera(slam->get_camera_id())) : nullptr;
