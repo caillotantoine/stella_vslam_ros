@@ -245,6 +245,7 @@ void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
     }
 }
 
+// A. CAILLOT
 multimono::multimono(const std::shared_ptr<stella_vslam::system>& slam, const std::string& mask_img_path) 
     : system(slam, mask_img_path) {
     
@@ -287,6 +288,7 @@ multimono::multimono(const std::shared_ptr<stella_vslam::system>& slam, const st
     }
 }
 
+// A. CAILLOT
 void multimono::callbackTwo(const sensor_msgs::ImageConstPtr& msg0, const sensor_msgs::ImageConstPtr& msg1) {
     if (camera_optical_frame_.empty()) {
         camera_optical_frame_ = msg0->header.frame_id;

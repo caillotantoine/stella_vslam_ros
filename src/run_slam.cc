@@ -199,14 +199,15 @@ int main(int argc, char* argv[]) {
         slam->disable_mapping_module();
     }
 
+    // A. CAILLOT
     if(camID->is_set()) 
         slam->set_camera_id(std::stoi(camID->value()));
     else
         slam->set_camera_id(0);
 
     std::shared_ptr<stella_vslam_ros::system> slam_ros;
-    if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Monocular) {
-        slam_ros = std::make_shared<stella_vslam_ros::multimono>(slam, mask_img_path->value());
+    if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Monocular) {// A. CAILLOT
+        slam_ros = std::make_shared<stella_vslam_ros::multimono>(slam, mask_img_path->value()); // A. CAILLOT
     }
     else if (slam->get_camera(slam->get_camera_id())->setup_type_ == stella_vslam::camera::setup_type_t::Stereo) {
         auto rectifier = rectify->value() ? std::make_shared<stella_vslam::util::stereo_rectifier>(cfg, slam->get_camera(slam->get_camera_id())) : nullptr;
