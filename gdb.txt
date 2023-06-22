@@ -1,0 +1,6 @@
+b main
+r
+
+b pose_optimizer_g2o.cc:54
+ignore 2 20
+c
