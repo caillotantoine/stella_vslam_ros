@@ -218,6 +218,7 @@ void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
     }
     const auto tp_1 = std::chrono::steady_clock::now();
     const auto timestamp = std::chrono::duration_cast<std::chrono::duration<double>>(tp_1 - tp_0_).count();
+    std::cout << cv_bridge::toCvShare(msg)->image.rows << ", " << cv_bridge::toCvShare(msg)->image.cols << std::endl;
 
     // input the current frame and estimate the camera pose
     auto cam_pose_wc = slam_->feed_monocular_frame(cv_bridge::toCvShare(msg)->image, timestamp, mask_);
